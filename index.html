@@ -94,14 +94,14 @@
             cursor: pointer;
         }
         #date-slider {
-            width: 600px;
+            width: 800px;
             margin: -20px 0;
         }
         #orbits {
             width: 800px;
-            height: 800px;
+            height: 600px;
             margin-left: auto;
-            margin-right: 20%;
+            margin-right: 30%;
             margin-top: 0; /* Прижимаем к верхнему краю */
         }
         @keyframes twinkle {
@@ -181,7 +181,7 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, 600 / 600, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(800, 800);
+        renderer.setSize(1000, 600);
         document.getElementById("orbits").appendChild(renderer.domElement);
 
         // Управление камерой
