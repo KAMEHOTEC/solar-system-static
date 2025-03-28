@@ -61,6 +61,11 @@
             right: 10px;
             cursor: pointer;
         }
+        #date-slider {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -79,6 +84,7 @@
         </thead>
         <tbody id="planet-table"></tbody>
     </table>
+    <input type="range" id="date-slider" min="-182" max="182" value="0" step="1">
 
     <div id="modal">
         <div id="modal-content">
@@ -124,7 +130,6 @@
 
         // Обновление таблицы
         function updateTable(date) {
-            console.log("Обновление таблицы для даты:", date);
             const tableBody = document.getElementById("planet-table");
             tableBody.innerHTML = "";
             planets.forEach(planet => {
@@ -165,10 +170,8 @@
         // Добавление слушателей для кнопок планет
         function addPlanetButtonListeners() {
             const buttons = document.querySelectorAll(".planet-btn");
-            console.log("Найдено кнопок планет:", buttons.length);
             buttons.forEach(btn => {
                 btn.addEventListener("click", () => {
-                    console.log("Клик по планете:", btn.dataset.planet);
                     showFact(btn.dataset.planet);
                 });
             });
@@ -179,7 +182,7 @@
             document.getElementById("modal").style.display = "none";
         });
 
-        // Обработка выбора даты
+        // Обработка выбора даты через input
         const datePicker = document.getElementById("date-picker");
         const dateInput = document.getElementById("date-input");
         datePicker.addEventListener("click", () => {
@@ -188,7 +191,6 @@
         });
         dateInput.addEventListener("change", () => {
             const selectedDate = new Date(dateInput.value);
-            console.log("Выбрана дата:", selectedDate);
             updateTable(selectedDate);
             dateInput.style.display = "none";
         });
@@ -197,8 +199,17 @@
         const today = new Date();
         dateInput.value = today.toISOString().split("T")[0];
 
+        // Обработка ползунка
+        const dateSlider = document.getElementById("date-slider");
+        dateSlider.addEventListener("input", () => {
+            const daysOffset = parseInt(dateSlider.value);
+            const newDate = new Date();
+            newDate.setDate(today.getDate() + daysOffset);
+            updateTable(newDate);
+            dateInput.value = newDate.toISOString().split("T")[0];
+        });
+
         // Инициализация с сегодняшней датой
-        console.log("Инициализация страницы...");
         updateTable(new Date());
     </script>
 </body>
