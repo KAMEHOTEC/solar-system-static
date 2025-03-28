@@ -64,9 +64,9 @@
     </style>
 </head>
 <body>
-    <h1 id="title">Планеты Солнечной системы (27.03.2025)</h1>
+    <h1 id="title">Планеты Солнечной системы</h1>
     <button id="date-picker">Выбрать дату</button>
-    <input type="date" id="date-input" style="display: none;" min="1900-01-01" max="2100-12-31" value="2025-03-27">
+    <input type="date" id="date-input" style="display: none;" min="1900-01-01" max="2100-12-31">
     <table>
         <thead>
             <tr>
@@ -146,7 +146,7 @@
         // Показ модального окна
         function showFact(planetName) {
             const planet = planets.find(p => p.name === planetName);
-            fetch(`https://ru.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(planetName)}&format=json&origin=*`)
+            fetch(`https://ru.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(planetName + " (планета)")}&format=json&origin=*`)
                 .then(response => response.json())
                 .then(data => {
                     const page = Object.values(data.query.pages)[0];
@@ -193,9 +193,13 @@
             dateInput.style.display = "none";
         });
 
-        // Инициализация
+        // Установка сегодняшней даты в input по умолчанию
+        const today = new Date();
+        dateInput.value = today.toISOString().split("T")[0];
+
+        // Инициализация с сегодняшней датой
         console.log("Инициализация страницы...");
-        updateTable(new Date("2025-03-27"));
+        updateTable(new Date());
     </script>
 </body>
 </html>
