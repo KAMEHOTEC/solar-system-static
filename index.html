@@ -7,11 +7,21 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background: #000 url('https://www.transparenttextures.com/patterns/stardust.png') repeat;
+            color: #fff;
+            position: relative;
+            overflow-x: hidden;
+        }
+        #container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 20px;
         }
         table {
             border-collapse: collapse;
-            width: 100%;
-            max-width: 800px;
+            width: 600px;
+            background: rgba(255, 255, 255, 0.1);
         }
         th, td {
             border: 1px solid #ddd;
@@ -19,20 +29,39 @@
             text-align: center;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: rgba(242, 242, 242, 0.5);
+            color: #000;
+        }
+        td:first-child {
+            color: #fff; /* Белый цвет для названий планет в первом столбце */
         }
         button.planet-btn {
             background: none;
             border: none;
-            color: blue;
+            color: #00f;
             text-decoration: underline;
             cursor: pointer;
             padding: 0;
             font-size: 16px;
+            position: relative;
         }
-        #date-picker {
-            margin: 10px 0;
+        button.planet-btn:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
             padding: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        #date-picker, #today-button {
+            margin: 10px 0;
+            padding: 5px 10px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -45,7 +74,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
         }
         #modal-content {
             background-color: white;
@@ -54,6 +84,7 @@
             width: 80%;
             max-width: 500px;
             position: relative;
+            color: #000;
         }
         #close-modal {
             position: absolute;
@@ -62,9 +93,44 @@
             cursor: pointer;
         }
         #date-slider {
-            width: 100%;
-            max-width: 800px;
-            margin-top: 20px;
+            width: 600px;
+            margin: -20px 0;
+        }
+        #orbits {
+            position: relative;
+            min-width: 400px;
+            min-height: 400px;
+            margin-left: auto; /* Прижимаем к правому краю */
+            margin-right: 20%; /* Сдвигаем левее на 20% от правого края */
+            margin-top: 10%; /* Опускаем ниже на 20% */
+        }
+        .orbit {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%; /* Центр орбит в середине контейнера #orbits */
+        }
+        .planet-dot {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
         }
     </style>
 </head>
@@ -72,19 +138,25 @@
     <h1 id="title">Планеты Солнечной системы</h1>
     <button id="date-picker">Выбрать дату</button>
     <input type="date" id="date-input" style="display: none;" min="1900-01-01" max="2100-12-31">
-    <table>
-        <thead>
-            <tr>
-                <th>Планета</th>
-                <th>Скорость (км/с)</th>
-                <th>Расстояние до Земли (млн км)</th>
-                <th>Длина года (дни)</th>
-                <th>Масса (отн. Земли)</th>
-            </tr>
-        </thead>
-        <tbody id="planet-table"></tbody>
-    </table>
-    <input type="range" id="date-slider" min="-182" max="182" value="0" step="1">
+    <div id="container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Планета</th>
+                    <th>Скорость (км/с)</th>
+                    <th>Длина года</th>
+                    <th>Масса (отн. Земли)</th>
+                    <th>Температура (°C)</th>
+                    <th>Расстояние до Земли (млн км)</th>
+                    <th>Дата макс. сближения в 2025</th>
+                </tr>
+            </thead>
+            <tbody id="planet-table"></tbody>
+        </table>
+        <div id="orbits"></div>
+    </div>
+    <input type="range" id="date-slider" min="-7300" max="7300" value="0" step="1">
+    <button id="today-button">Сегодня</button>
 
     <div id="modal">
         <div id="modal-content">
@@ -97,14 +169,14 @@
 
     <script>
         const planets = [
-            { name: "Меркурий", speed: 47.87, distance_au: 0.39, year_days: 88, mass_rel_earth: 0.0553, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Mercury_in_true_color.jpg/200px-Mercury_in_true_color.jpg" },
-            { name: "Венера", speed: 35.02, distance_au: 0.72, year_days: 225, mass_rel_earth: 0.815, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Venus-real_color.jpg/200px-Venus-real_color.jpg" },
-            { name: "Земля", speed: 29.78, distance_au: 1.0, year_days: 365.25, mass_rel_earth: 1.0, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/200px-The_Earth_seen_from_Apollo_17.jpg" },
-            { name: "Марс", speed: 24.13, distance_au: 1.52, year_days: 687, mass_rel_earth: 0.107, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/200px-OSIRIS_Mars_true_color.jpg" },
-            { name: "Юпитер", speed: 13.07, distance_au: 5.20, year_days: 4333, mass_rel_earth: 317.8, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Jupiter_and_its_shrunken_Great_Red_Spot.jpg/200px-Jupiter_and_its_shrunken_Great_Red_Spot.jpg" },
-            { name: "Сатурн", speed: 9.69, distance_au: 9.58, year_days: 10759, mass_rel_earth: 95.2, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/200px-Saturn_during_Equinox.jpg" },
-            { name: "Уран", speed: 6.81, distance_au: 19.22, year_days: 30687, mass_rel_earth: 14.5, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Uranus2.jpg/200px-Uranus2.jpg" },
-            { name: "Нептун", speed: 5.43, distance_au: 30.05, year_days: 59800, mass_rel_earth: 17.1, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Neptune_Full_%28transparent%29.png/200px-Neptune_Full_%28transparent%29.png" }
+            { name: "Меркурий", speed: 47.87, distance_au: 0.39, year_days: 88, mass_rel_earth: 0.0553, temp: 167, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Mercury_in_true_color.jpg/200px-Mercury_in_true_color.jpg", tooltip: "Самая маленькая планета", color: "#D3D3D3" },
+            { name: "Венера", speed: 35.02, distance_au: 0.72, year_days: 225, mass_rel_earth: 0.815, temp: 464, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Venus-real_color.jpg/200px-Venus-real_color.jpg", tooltip: "Самая горячая планета", color: "#FFD700" },
+            { name: "Земля", speed: 29.78, distance_au: 1.0, year_days: 365.25, mass_rel_earth: 1.0, temp: 15, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/200px-The_Earth_seen_from_Apollo_17.jpg", tooltip: "Наш дом", color: "#00FF00" },
+            { name: "Марс", speed: 24.13, distance_au: 1.52, year_days: 687, mass_rel_earth: 0.107, temp: -65, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/200px-OSIRIS_Mars_true_color.jpg", tooltip: "Красная планета", color: "#FF4500" },
+            { name: "Юпитер", speed: 13.07, distance_au: 5.20, year_days: 4333, mass_rel_earth: 317.8, temp: -110, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Jupiter_and_its_shrunken_Great_Red_Spot.jpg/200px-Jupiter_and_its_shrunken_Great_Red_Spot.jpg", tooltip: "Самая большая планета", color: "#FFA500" },
+            { name: "Сатурн", speed: 9.69, distance_au: 9.58, year_days: 10759, mass_rel_earth: 95.2, temp: -140, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/200px-Saturn_during_Equinox.jpg", tooltip: "Имеет кольца", color: "#F4A460" },
+            { name: "Уран", speed: 6.81, distance_au: 19.22, year_days: 30687, mass_rel_earth: 14.5, temp: -195, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Uranus2.jpg/200px-Uranus2.jpg", tooltip: "Ледяной гигант", color: "#00CED1" },
+            { name: "Нептун", speed: 5.43, distance_au: 30.05, year_days: 59800, mass_rel_earth: 17.1, temp: -200, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Neptune_-_Voyager_2_%2829347980845%29_flatten_crop.jpg/200px-Neptune_-_Voyager_2_%2829347980845%29_flatten_crop.jpg", tooltip: "Самая дальняя планета", color: "#0000FF" }
         ];
 
         // Функция форматирования массы
@@ -112,6 +184,12 @@
             if (mass > 1) return `${Math.round(mass * 10) / 10}x`;
             else if (mass < 1) return `${Math.round(mass * 100 * 10) / 10}%`;
             else return "1x";
+        }
+
+        // Функция форматирования длины года
+        function formatYearLength(days) {
+            const earthYears = days / 365.25;
+            return days <= 730 ? `${days} дней` : `${Math.round(earthYears * 10) / 10} земных лет`;
         }
 
         // Функция вычисления расстояния
@@ -128,21 +206,85 @@
             return Math.round(distanceAu * 149.6 * 100) / 100;
         }
 
-        // Обновление таблицы
+        // Функция вычисления цвета фона и текста для расстояния
+        function getDistanceStyle(distance, minDistance, maxDistance) {
+            const normalized = (distance - minDistance) / (maxDistance - minDistance);
+            let r, g;
+            if (normalized < 0.5) {
+                r = Math.round(255 * (normalized * 2));
+                g = 255;
+            } else {
+                r = 255;
+                g = Math.round(255 * (1 - (normalized - 0.5) * 2));
+            }
+            const backgroundColor = `rgb(${r}, ${g}, 0)`;
+            const textColor = normalized > 0.75 ? "#FFFFFF" : "#000000";
+            return { backgroundColor, color: textColor };
+        }
+
+        // Функция поиска даты максимального сближения в 2025 году
+        function getClosestApproachDate(planet) {
+            const startDate = new Date("2025-01-01");
+            let minDistance = Infinity;
+            let closestDate = null;
+            for (let day = 0; day < 365; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + day);
+                const distance = calculateDistance(planet, currentDate);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestDate = currentDate;
+                }
+            }
+            return closestDate.toLocaleDateString("ru-RU");
+        }
+
+        // Обновление таблицы и орбит
         function updateTable(date) {
             const tableBody = document.getElementById("planet-table");
             tableBody.innerHTML = "";
-            planets.forEach(planet => {
+            const orbitsContainer = document.getElementById("orbits");
+            orbitsContainer.innerHTML = "";
+            const startDate = new Date("1900-01-01");
+            const daysSinceStart = (date - startDate) / (1000 * 60 * 60 * 24);
+            const scale = 12; // Масштаб орбит (уже уменьшен на 20%)
+
+            planets.forEach((planet, index) => {
                 const distance = calculateDistance(planet, date);
+                const minDistance = Math.abs(planet.distance_au - 1.0) * 149.6;
+                const maxDistance = (planet.distance_au + 1.0) * 149.6;
+                const style = getDistanceStyle(distance, minDistance, maxDistance);
+                const tempColor = planet.temp > 0 ? "#FF4500" : "#00BFFF";
+                const closestApproach = getClosestApproachDate(planet);
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td><button class="planet-btn" data-planet="${planet.name}">${planet.name}</button></td>
+                    <td><button class="planet-btn" data-planet="${planet.name}" data-tooltip="${planet.tooltip}">${planet.name}</button></td>
                     <td>${planet.speed}</td>
-                    <td>${distance}</td>
-                    <td>${planet.year_days}</td>
+                    <td>${formatYearLength(planet.year_days)}</td>
                     <td>${formatMass(planet.mass_rel_earth)}</td>
+                    <td style="color: ${tempColor}">${planet.temp}</td>
+                    <td style="background-color: ${style.backgroundColor}; color: ${style.color}">${distance}</td>
+                    <td>${closestApproach}</td>
                 `;
                 tableBody.appendChild(row);
+
+                // Орбиты
+                const orbitSize = planet.distance_au * scale * 2;
+                const orbit = document.createElement("div");
+                orbit.className = "orbit";
+                orbit.style.width = `${orbitSize}px`;
+                orbit.style.height = `${orbitSize}px`;
+                orbitsContainer.appendChild(orbit);
+
+                const angle = (daysSinceStart / planet.year_days) * 2 * Math.PI;
+                const x = Math.cos(angle) * (orbitSize / 2);
+                const y = Math.sin(angle) * (orbitSize / 2);
+                const dot = document.createElement("div");
+                dot.className = "planet-dot";
+                dot.style.left = `calc(50% + ${x}px)`;
+                dot.style.top = `calc(50% + ${y}px)`;
+                dot.style.backgroundColor = planet.color;
+                orbitsContainer.appendChild(dot);
             });
             document.getElementById("title").textContent = `Планеты Солнечной системы (${date.toLocaleDateString("ru-RU")})`;
             addPlanetButtonListeners();
@@ -151,7 +293,8 @@
         // Показ модального окна
         function showFact(planetName) {
             const planet = planets.find(p => p.name === planetName);
-            fetch(`https://ru.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(planetName + " (планета)")}&format=json&origin=*`)
+            const wikiTitle = planetName === "Уран" ? "Уран (планета)" : planetName;
+            fetch(`https://ru.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(wikiTitle)}&format=json&origin=*`)
                 .then(response => response.json())
                 .then(data => {
                     const page = Object.values(data.query.pages)[0];
@@ -208,6 +351,25 @@
             updateTable(newDate);
             dateInput.value = newDate.toISOString().split("T")[0];
         });
+
+        // Кнопка "Сегодня"
+        const todayButton = document.getElementById("today-button");
+        todayButton.addEventListener("click", () => {
+            dateSlider.value = 0;
+            const newDate = new Date();
+            updateTable(newDate);
+            dateInput.value = newDate.toISOString().split("T")[0];
+        });
+
+        // Добавление звёзд на фон
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement("div");
+            star.className = "star";
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.animationDelay = `${Math.random() * 2}s`;
+            document.body.appendChild(star);
+        }
 
         // Инициализация с сегодняшней датой
         updateTable(new Date());
